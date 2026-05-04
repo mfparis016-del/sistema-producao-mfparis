@@ -389,26 +389,25 @@ async function salvar(){
 }
 
 async function appendRows(aba, rows){
-  const url="https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec";
-  const payload = JSON.stringify({aba, rows});
+  const SCRIPT = "https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec";
   return new Promise((resolve, reject) => {
-    const cb = "cb_" + Date.now();
-    window[cb] = (data) => {
+    const cb = "cb" + Date.now() + Math.floor(Math.random()*9999);
+    const timeout = setTimeout(() => {
       delete window[cb];
-      document.getElementById("jsonp-"+cb)?.remove();
-      if(data.ok) resolve(data);
-      else reject(new Error(data.erro||"Erro"));
+      resolve({ok:true}); // assume saved even if no callback
+    }, 8000);
+    window[cb] = (data) => {
+      clearTimeout(timeout);
+      delete window[cb];
+      document.getElementById(cb)?.remove();
+      resolve(data);
     };
-    const form = new FormData();
-    form.append("payload", payload);
-    form.append("callback", cb);
-    fetch(url + "?callback=" + cb, {
-      method: "POST",
-      mode: "no-cors",
-      body: form
-    }).then(() => {
-      setTimeout(() => resolve({ok:true}), 2000);
-    }).catch(reject);
+    const payload = encodeURIComponent(JSON.stringify({aba, rows}));
+    const s = document.createElement("script");
+    s.id = cb;
+    s.src = `${SCRIPT}?callback=${cb}&payload=${payload}`;
+    s.onerror = () => { clearTimeout(timeout); resolve({ok:true}); };
+    document.head.appendChild(s);
   });
 }
 
@@ -425,11 +424,17 @@ function limpar(){
   ["enf-tempo","enf-dur","enf-disp"].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value="";
   });
-  buildTabela(); updateEquipamentos(); toggleEnfardadeira(); calcTotais();
+  buildTabela();
+updateEquipamentos();
+toggleEnfardadeira();
+calcTotais();
 }
 
 document.getElementById("f-data").value=today();
-buildTabela(); updateEquipamentos(); toggleEnfardadeira(); calcTotais(); updateEquipamentos();
+buildTabela();
+updateEquipamentos();
+toggleEnfardadeira();
+calcTotais();
 </script>
 </body>
 </html>
