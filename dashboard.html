@@ -287,6 +287,13 @@ async function carregarDados(){
     ]);
     todosTurnos=rT.dados||[];
     todasParadas=rP.dados||[];
+    // DEBUG — mostra campos da primeira parada no console
+    if(todasParadas.length>0){
+      console.log("=== CAMPOS DA PARADA ===");
+      console.log(JSON.stringify(Object.keys(todasParadas[0])));
+      console.log("=== VALORES ===");
+      console.log(JSON.stringify(todasParadas[0]));
+    }
     renderTudo();
     document.getElementById("atualizado").textContent="Atualizado: "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   }catch(e){
