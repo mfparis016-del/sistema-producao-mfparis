@@ -1,0 +1,452 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mobile — MFParis Produção</title>
+<style>
+:root{
+  --azul:#1a56a0;--azul-l:#e8f0fb;
+  --verde:#1a7a50;--verde-l:#e6f5ee;
+  --vermelho:#c0392b;--vermelho-l:#fdecea;
+  --amarelo:#d4820a;--amarelo-l:#fffbe6;
+  --cinza-l:#f5f5f3;--borda:#ddd;--texto:#222;--texto-s:#777;
+  --r:10px;--r-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#eee9e0;color:var(--texto);min-height:100vh;padding-bottom:80px;}
+.topbar{background:#111;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;}
+.topbar .marca{color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.topbar .dot{width:7px;height:7px;border-radius:50%;background:#1a7a50;display:inline-block;}
+.sync-btn{background:rgba(255,255,255,.1);border:none;color:#ccc;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--borda);display:flex;z-index:100;}
+.bnav{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 6px;cursor:pointer;border:none;background:transparent;font-family:inherit;}
+.bnav .ico{font-size:20px;line-height:1;margin-bottom:2px;}
+.bnav .lbl{font-size:10px;color:var(--texto-s);font-weight:500;}
+.bnav.ativo .lbl{color:var(--azul);font-weight:700;}
+.page{display:none;padding:14px;}
+.page.ativo{display:block;}
+.card{background:#fff;border-radius:var(--r-lg);border:1px solid var(--borda);padding:14px;margin-bottom:12px;}
+.card-titulo{font-size:11px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.kpi-m{background:#fff;border-radius:var(--r-lg);border:1px solid var(--borda);padding:14px;text-align:center;}
+.kpi-m .lbl{font-size:10px;font-weight:600;color:var(--texto-s);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.kpi-m .val{font-size:22px;font-weight:700;color:var(--texto);}
+.kpi-m .sub{font-size:10px;color:var(--texto-s);margin-top:3px;}
+.kpi-m.ok .val{color:var(--verde);}
+.kpi-m.warn .val{color:var(--amarelo);}
+.kpi-m.crit .val{color:var(--vermelho);}
+.sem-row{display:flex;gap:8px;margin-bottom:12px;}
+.sem-m{flex:1;border-radius:var(--r);padding:10px 8px;text-align:center;border:1px solid transparent;}
+.sem-m.ok{background:var(--verde-l);border-color:#9FE1CB;}
+.sem-m.warn{background:var(--amarelo-l);border-color:#FAC775;}
+.sem-m.crit{background:var(--vermelho-l);border-color:#F7C1C1;}
+.sem-m .sl{font-size:9px;font-weight:700;text-transform:uppercase;margin-bottom:2px;}
+.sem-m.ok .sl{color:#0F6E56;} .sem-m.warn .sl{color:#854F0B;} .sem-m.crit .sl{color:#A32D2D;}
+.sem-m .sv{font-size:18px;font-weight:700;}
+.sem-m.ok .sv{color:var(--verde);} .sem-m.warn .sv{color:var(--amarelo);} .sem-m.crit .sv{color:var(--vermelho);}
+.fl{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fl label{font-size:11px;font-weight:600;color:var(--texto-s);text-transform:uppercase;letter-spacing:.3px;}
+.fl input,.fl select,.fl textarea{font-size:15px;padding:11px 12px;border-radius:var(--r);border:1px solid var(--borda);background:var(--cinza-l);color:var(--texto);font-family:inherit;-webkit-appearance:none;transition:border .15s;}
+.fl input:focus,.fl select:focus,.fl textarea:focus{outline:none;border-color:var(--azul);background:#fff;}
+.fl input[readonly]{background:#ececec;color:var(--texto-s);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.parada-card{background:var(--vermelho-l);border:1px solid #F7C1C1;border-radius:var(--r-lg);padding:14px;margin-bottom:10px;}
+.parada-card .pc-titulo{font-size:11px;font-weight:700;color:#A32D2D;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.parada-card .pc-titulo button{background:#A32D2D;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit;}
+.btn{width:100%;padding:13px;font-size:14px;font-weight:700;font-family:inherit;border-radius:var(--r);cursor:pointer;border:none;transition:all .15s;margin-bottom:8px;}
+.btn:active{transform:scale(.98);}
+.btn.primario{background:var(--azul);color:#fff;}
+.btn.secundario{background:#fff;color:var(--texto);border:1px solid var(--borda);}
+.btn.add-parada{background:var(--vermelho-l);color:#A32D2D;border:1px dashed #F7C1C1;font-size:13px;}
+.totais-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.tot-box{background:var(--cinza-l);border-radius:var(--r);padding:10px 12px;text-align:center;}
+.tot-box .tl{font-size:9px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
+.tot-box .tv{font-size:20px;font-weight:700;color:var(--texto);}
+.tot-box.ok .tv{color:var(--verde);} .tot-box.warn .tv{color:var(--amarelo);} .tot-box.crit .tv{color:var(--vermelho);}
+.alerta-m{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border-radius:var(--r);margin-bottom:6px;border-left:3px solid transparent;}
+.alerta-m.crit{background:#fff5f5;border-left-color:var(--vermelho);}
+.alerta-m.warn{background:#fffbf0;border-left-color:var(--amarelo);}
+.alerta-m.ok{background:var(--verde-l);border-left-color:var(--verde);}
+.adot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.alerta-m.crit .adot{background:var(--vermelho);} .alerta-m.warn .adot{background:var(--amarelo);} .alerta-m.ok .adot{background:var(--verde);}
+.atxt{font-size:12px;line-height:1.5;}
+.turno-item{background:#fff;border:1px solid var(--borda);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;}
+.ti-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.ti-title{font-size:13px;font-weight:600;}
+.ti-meta{display:flex;gap:10px;font-size:11px;color:var(--texto-s);flex-wrap:wrap;}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge.ok{background:var(--verde-l);color:#0F6E56;}
+.badge.warn{background:var(--amarelo-l);color:#854F0B;}
+.badge.crit{background:var(--vermelho-l);color:#A32D2D;}
+.vazio{text-align:center;padding:24px;color:var(--texto-s);font-size:13px;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;}
+.overlay.oculto{display:none;}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:giro .7s linear infinite;}
+@keyframes giro{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="marca"><span class="dot"></span>MFParis Produção</div>
+  <button class="sync-btn" onclick="syncData()">↺ Sync</button>
+</div>
+
+<div class="overlay oculto" id="loading"><div class="spinner"></div></div>
+
+<!-- DASHBOARD -->
+<div class="page ativo" id="page-dash">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px;">
+    <div>
+      <div style="font-size:16px;font-weight:700;">Visão do turno</div>
+      <div style="font-size:11px;color:var(--texto-s);" id="dash-sub">Hoje · Todas as linhas</div>
+    </div>
+    <select id="dash-linha" onchange="renderDash()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--borda);background:#fff;-webkit-appearance:none;">
+      <option value="">Todas</option>
+      <option>Láctea</option><option>Sacaria</option><option>Café</option>
+    </select>
+  </div>
+  <div class="kpi-grid" id="kpi-m"></div>
+  <div class="sem-row" id="sem-m"></div>
+  <div class="card">
+    <div class="card-titulo">Alertas de hoje</div>
+    <div id="alertas-m"><div class="vazio">Carregando…</div></div>
+  </div>
+  <div class="card">
+    <div class="card-titulo">Últimos turnos</div>
+    <div id="turnos-rec"></div>
+  </div>
+</div>
+
+<!-- APONTAMENTO -->
+<div class="page" id="page-apon">
+  <div style="font-size:16px;font-weight:700;margin-bottom:4px;padding-top:4px;">Apontamento</div>
+  <div style="font-size:11px;color:var(--texto-s);margin-bottom:14px;">Registre o turno completo</div>
+
+  <div class="card">
+    <div class="card-titulo">Identificação</div>
+    <div class="fl"><label>Data</label><input type="date" id="m-data"></div>
+    <div class="row2">
+      <div class="fl"><label>Linha</label>
+        <select id="m-linha" onchange="updateEquipM()">
+          <option>Láctea</option><option>Sacaria</option><option>Café</option>
+        </select>
+      </div>
+      <div class="fl"><label>Turno</label>
+        <select id="m-turno"><option>Turno A</option><option>Turno B</option><option>Turno C</option></select>
+      </div>
+    </div>
+    <div class="fl"><label>Líder</label><input type="text" id="m-lider" placeholder="Nome do líder"></div>
+    <div class="fl"><label>Operador</label><input type="text" id="m-op" placeholder="Nome(s)"></div>
+    <div class="row2">
+      <div class="fl"><label>SKU</label><input type="text" id="m-sku" placeholder="Ex: LT-001"></div>
+      <div class="fl"><label>Meta turno</label><input type="number" id="m-meta" placeholder="0" inputmode="numeric" oninput="calcM()"></div>
+    </div>
+    <div class="fl"><label>Produto</label><input type="text" id="m-produto" placeholder="Nome do produto"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">Produção realizada</div>
+    <div class="fl"><label>Quantidade produzida no turno</label>
+      <input type="number" id="m-real" placeholder="0" inputmode="numeric" oninput="calcM()">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">Paradas do turno</div>
+    <div id="paradas-lista"></div>
+    <button class="btn add-parada" onclick="addParadaM()">+ Adicionar parada</button>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">Totais calculados</div>
+    <div class="totais-row">
+      <div class="tot-box"><div class="tl">Produzido</div><div class="tv" id="tm-prod">0</div></div>
+      <div class="tot-box"><div class="tl">Parado (min)</div><div class="tv" id="tm-min">0</div></div>
+      <div class="tot-box"><div class="tl">Nº Paradas</div><div class="tv" id="tm-np">0</div></div>
+      <div class="tot-box"><div class="tl">Disponibilidade</div><div class="tv" id="tm-disp">—</div></div>
+    </div>
+  </div>
+
+  <button class="btn primario" onclick="salvarM()">Salvar turno</button>
+  <button class="btn secundario" onclick="limparM()">Limpar</button>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="page" id="page-hist">
+  <div style="font-size:16px;font-weight:700;margin-bottom:4px;padding-top:4px;">Histórico</div>
+  <div style="font-size:11px;color:var(--texto-s);margin-bottom:14px;" id="hist-sub">Últimos turnos</div>
+  <div id="hist-lista"><div class="vazio">Carregando…</div></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bnav ativo" id="bn-dash" onclick="setPageM('dash',this)">
+    <div class="ico">📊</div><div class="lbl">Dashboard</div>
+  </button>
+  <button class="bnav" id="bn-apon" onclick="setPageM('apon',this)">
+    <div class="ico">✏️</div><div class="lbl">Apontamento</div>
+  </button>
+  <button class="bnav" id="bn-hist" onclick="setPageM('hist',this)">
+    <div class="ico">📋</div><div class="lbl">Histórico</div>
+  </button>
+</nav>
+
+<script>
+const SCRIPT = "https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec";
+const CAUSAS = {MC:"Manut. Corretiva",MP:"Manut. Preventiva",SE:"Setup/Changeover",
+  FI:"Falta de Insumo",QR:"Qualidade/Retrabalho",AO:"Ag. Operador",
+  PP:"Parada Programada",UT:"Utilidades",OT:"Outro"};
+const EQUIP = {
+  "Láctea":  ["—","Mazipak","Indumak","Enfardadeira","Outro"],
+  "Sacaria": ["—","EP04","Outro"],
+  "Café":    ["—","Abis","Mazipak Café","Outro"]
+};
+
+let allTurnos=[], allParadas=[], paradaCount=0;
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmtData(d){ try{ return new Date(d).toLocaleDateString("pt-BR"); }catch{ return d||"—"; } }
+function diffMin(a,b){ if(!a||!b)return 0; const[ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number); let d=(bh*60+bm)-(ah*60+am); if(d<0)d+=1440; return d; }
+function calcDisp(min){ return Math.max(0,Math.round((1-min/600)*100)); }
+function dispCls(v){ return v>=90?"ok":v>=80?"warn":"crit"; }
+
+function toast(msg,tipo="ok"){
+  let t=document.getElementById("mtoast");
+  if(!t){t=document.createElement("div");t.id="mtoast";t.style.cssText="position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;";document.body.appendChild(t);}
+  t.textContent=msg;t.style.background=tipo==="ok"?"#1a7a50":tipo==="err"?"#c0392b":"#d4820a";t.style.color="#fff";t.style.opacity="1";
+  setTimeout(()=>t.style.opacity="0",3000);
+}
+
+function loading(v){ document.getElementById("loading").classList.toggle("oculto",!v); }
+
+function fetchJSON(url){
+  return new Promise((resolve)=>{
+    const cb="jcb"+Date.now()+Math.floor(Math.random()*9999);
+    window[cb]=(d)=>{delete window[cb];document.getElementById(cb)?.remove();resolve(d);};
+    const s=document.createElement("script");s.id=cb;
+    s.src=url+"&callback="+cb;
+    s.onerror=()=>resolve({ok:true,dados:[]});
+    document.head.appendChild(s);
+    setTimeout(()=>{if(window[cb]){delete window[cb];resolve({ok:true,dados:[]});}},10000);
+  });
+}
+
+async function appendRows(aba,rows){
+  return new Promise((resolve)=>{
+    const cb="cb"+Date.now()+Math.floor(Math.random()*9999);
+    const timeout=setTimeout(()=>{delete window[cb];resolve({ok:true});},8000);
+    window[cb]=(data)=>{clearTimeout(timeout);delete window[cb];document.getElementById(cb)?.remove();resolve(data);};
+    const payload=encodeURIComponent(JSON.stringify({aba,rows}));
+    const s=document.createElement("script");s.id=cb;
+    s.src=`${SCRIPT}?callback=${cb}&payload=${payload}`;
+    s.onerror=()=>{clearTimeout(timeout);resolve({ok:true});};
+    document.head.appendChild(s);
+  });
+}
+
+window.addEventListener("DOMContentLoaded",async()=>{
+  document.getElementById("m-data").value=today();
+  updateEquipM();
+  await syncData();
+});
+
+async function syncData(){
+  loading(true);
+  try{
+    const[rT,rP]=await Promise.all([
+      fetchJSON(SCRIPT+"?aba=Turnos&limite=100"),
+      fetchJSON(SCRIPT+"?aba=Paradas&limite=200")
+    ]);
+    allTurnos=rT.dados||[];
+    allParadas=rP.dados||[];
+    renderDash();
+    renderHist();
+    toast("Dados atualizados");
+  }catch(e){ toast("Erro de conexão","err"); }
+  loading(false);
+}
+
+function setPageM(p,btn){
+  document.querySelectorAll(".page").forEach(el=>el.classList.remove("ativo"));
+  document.getElementById("page-"+p).classList.add("ativo");
+  document.querySelectorAll(".bnav").forEach(b=>b.classList.remove("ativo"));
+  if(btn) btn.classList.add("ativo");
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function renderDash(){
+  const linhaF=document.getElementById("dash-linha").value;
+  const hoje=today();
+  const turnos=allTurnos.filter(t=>t["Data"]===hoje&&(!linhaF||t["Linha"]===linhaF));
+  const paradas=allParadas.filter(p=>p["Data"]===hoje&&(!linhaF||p["Linha"]===linhaF));
+  document.getElementById("dash-sub").textContent=`Hoje · ${linhaF||"Todas as linhas"} · ${turnos.length} turno(s)`;
+
+  if(!turnos.length){
+    document.getElementById("kpi-m").innerHTML=`<div class="kpi-m" style="grid-column:span 2"><div class="lbl">Sem registros hoje</div><div class="val" style="font-size:14px;color:var(--texto-s);">Nenhum turno apontado</div></div>`;
+    document.getElementById("sem-m").innerHTML="";
+  } else {
+    const totalProd=turnos.reduce((a,t)=>a+(parseFloat(t["Total Produzido"])||0),0);
+    const totalMin=turnos.reduce((a,t)=>a+(parseFloat(t["Total Parado (min)"])||0),0);
+    const totalPar=turnos.reduce((a,t)=>a+(parseFloat(t["Nº Paradas"])||0),0);
+    const disp=Math.round(turnos.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/turnos.length);
+    const cls=dispCls(disp);
+    document.getElementById("kpi-m").innerHTML=`
+      <div class="kpi-m ${cls}"><div class="lbl">Disponibilidade</div><div class="val">${disp}%</div><div class="sub">Meta 90%</div></div>
+      <div class="kpi-m"><div class="lbl">Produzido</div><div class="val">${totalProd.toLocaleString("pt-BR")}</div><div class="sub">${turnos.length} turno(s)</div></div>
+      <div class="kpi-m ${totalMin>120?"crit":totalMin>60?"warn":"ok"}"><div class="lbl">Parado</div><div class="val">${totalMin}min</div><div class="sub">${totalPar} parada(s)</div></div>
+      <div class="kpi-m ${paradas.filter(p=>p["Retrabalho/Descarte"]&&String(p["Retrabalho/Descarte"]).trim()).length>0?"warn":"ok"}">
+        <div class="lbl">Retrabalhos</div><div class="val">${paradas.filter(p=>p["Retrabalho/Descarte"]&&String(p["Retrabalho/Descarte"]).trim()).length}</div><div class="sub">ocorrências</div>
+      </div>`;
+    const linhas=linhaF?[linhaF]:["Láctea","Sacaria","Café"];
+    document.getElementById("sem-m").innerHTML=linhas.map(l=>{
+      const lt=allTurnos.filter(t=>t["Data"]===hoje&&t["Linha"]===l);
+      if(!lt.length) return `<div class="sem-m ok"><div class="sl">${l}</div><div class="sv">—</div></div>`;
+      const d=Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length);
+      return `<div class="sem-m ${dispCls(d)}"><div class="sl">${l}</div><div class="sv">${d}%</div></div>`;
+    }).join("");
+  }
+
+  const al=[];
+  paradas.filter(p=>parseFloat(p["Duração (min)"])>=60).forEach(p=>al.push({cls:"crit",txt:`Parada longa ${p["Duração (min)"]}min — ${p["Causa (descrição)"]||p["Causa (sigla)"]} · ${p["Linha"]}`}));
+  paradas.filter(p=>{const d=parseFloat(p["Duração (min)"]);return d>=30&&d<60;}).forEach(p=>al.push({cls:"warn",txt:`Parada ${p["Duração (min)"]}min — ${p["Causa (descrição)"]||p["Causa (sigla)"]} · ${p["Linha"]}`}));
+  turnos.filter(t=>(parseFloat(t["Disponibilidade (%)"])||0)<90).forEach(t=>al.push({cls:"warn",txt:`Disp. ${t["Disponibilidade (%)"]}% abaixo da meta — ${t["Linha"]}`}));
+  if(!al.length) al.push({cls:"ok",txt:"Nenhum alerta hoje"});
+  document.getElementById("alertas-m").innerHTML=al.slice(0,5).map(a=>
+    `<div class="alerta-m ${a.cls}"><div class="adot"></div><div class="atxt">${a.txt}</div></div>`).join("");
+
+  document.getElementById("turnos-rec").innerHTML=allTurnos.slice(0,5).map(t=>{
+    const d=parseFloat(t["Disponibilidade (%)"])||0;
+    const cls=dispCls(d);
+    return `<div class="turno-item">
+      <div class="ti-header"><div class="ti-title">${t["Linha"]} · ${t["Turno"]}</div><span class="badge ${cls}">${d}%</span></div>
+      <div class="ti-meta"><span>${fmtData(t["Data"])}</span><span>${t["Produto"]||"—"}</span><span>${t["Nº Paradas"]||0} par.</span></div>
+    </div>`;
+  }).join("")||`<div class="vazio">Nenhum turno registrado</div>`;
+}
+
+// ── APONTAMENTO ───────────────────────────────────────────────
+function updateEquipM(){
+  const linha=document.getElementById("m-linha").value;
+  const opts=EQUIP[linha]||["—","Outro"];
+  document.querySelectorAll(".equip-parada").forEach(sel=>{
+    const cur=sel.value;
+    sel.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join("");
+    if(opts.includes(cur)) sel.value=cur;
+  });
+}
+
+function addParadaM(){
+  const i=paradaCount++;
+  const linha=document.getElementById("m-linha").value;
+  const opts=(EQUIP[linha]||["—","Outro"]).map(o=>`<option value="${o}">${o}</option>`).join("");
+  const div=document.createElement("div");
+  div.className="parada-card"; div.id=`pc-${i}`;
+  div.innerHTML=`
+    <div class="pc-titulo">Parada ${i+1}<button onclick="document.getElementById('pc-${i}').remove();calcM();">Remover</button></div>
+    <div class="row2">
+      <div class="fl"><label>Início</label><input type="time" id="pp-ini-${i}" oninput="calcM()"></div>
+      <div class="fl"><label>Fim</label><input type="time" id="pp-fim-${i}" oninput="calcM()"></div>
+    </div>
+    <div class="fl"><label>Causa</label>
+      <select id="pp-causa-${i}">
+        <option value="">Selecione…</option>
+        ${Object.entries(CAUSAS).map(([k,v])=>`<option value="${k}">${k} – ${v}</option>`).join("")}
+      </select>
+    </div>
+    <div class="fl"><label>Equipamento</label>
+      <select id="pp-equip-${i}" class="equip-parada">${opts}</select>
+    </div>
+    <div class="fl"><label>Retrabalho / Descarte</label><input type="text" id="pp-ret-${i}" placeholder="Tipo (se houver)"></div>
+    <div class="fl"><label>Observação</label><textarea id="pp-obs-${i}" placeholder="Observações livres" rows="2" style="min-height:48px;font-size:14px;"></textarea></div>`;
+  document.getElementById("paradas-lista").appendChild(div);
+}
+
+function calcM(){
+  const real=parseFloat(document.getElementById("m-real").value)||0;
+  let totalMin=0,nP=0;
+  for(let i=0;i<paradaCount;i++){
+    const el=document.getElementById(`pc-${i}`); if(!el) continue;
+    const dur=diffMin(document.getElementById(`pp-ini-${i}`)?.value,document.getElementById(`pp-fim-${i}`)?.value);
+    if(dur>0){totalMin+=dur;nP++;}
+  }
+  const disp=real>0||nP>0?calcDisp(totalMin):null;
+  document.getElementById("tm-prod").textContent=real.toLocaleString("pt-BR");
+  document.getElementById("tm-min").textContent=totalMin;
+  document.getElementById("tm-np").textContent=nP;
+  document.getElementById("tm-disp").textContent=disp!==null?disp+"%":"—";
+  const box=document.getElementById("tm-disp").parentElement;
+  box.className="tot-box"+(disp===null?"":" "+dispCls(disp));
+}
+
+async function salvarM(){
+  const data=document.getElementById("m-data").value;
+  const linha=document.getElementById("m-linha").value;
+  const produto=document.getElementById("m-produto").value;
+  if(!data||!linha||!produto){ toast("Preencha Data, Linha e Produto","warn"); return; }
+  loading(true);
+  try{
+    const real=parseFloat(document.getElementById("m-real").value)||0;
+    let totalMin=0,nP=0;
+    const paradasArr=[];
+    for(let i=0;i<paradaCount;i++){
+      const el=document.getElementById(`pc-${i}`); if(!el) continue;
+      const ini=document.getElementById(`pp-ini-${i}`)?.value||"";
+      const fim=document.getElementById(`pp-fim-${i}`)?.value||"";
+      const dur=diffMin(ini,fim);
+      const causa=document.getElementById(`pp-causa-${i}`)?.value||"";
+      const equip=document.getElementById(`pp-equip-${i}`)?.value||"";
+      const ret=document.getElementById(`pp-ret-${i}`)?.value||"";
+      const obs=document.getElementById(`pp-obs-${i}`)?.value||"";
+      if(dur>0){totalMin+=dur;nP++;}
+      if(dur>0||causa) paradasArr.push([data,linha,document.getElementById("m-turno").value,
+        document.getElementById("m-sku").value,"—",0,real,ini,fim,dur,
+        causa,CAUSAS[causa]||causa,equip,ret,obs]);
+    }
+    const disp=calcDisp(totalMin);
+    await appendRows("Turnos",[[data,linha,document.getElementById("m-turno").value,
+      document.getElementById("m-lider").value,document.getElementById("m-op").value,
+      document.getElementById("m-sku").value,produto,real,totalMin,nP,disp,
+      "Salvo (Mobile)",new Date().toLocaleString("pt-BR")]]);
+    if(paradasArr.length) await appendRows("Paradas",paradasArr);
+    toast("Turno salvo!","ok");
+    await syncData();
+    limparM();
+  }catch(e){ console.error(e); toast("Erro ao salvar","err"); }
+  loading(false);
+}
+
+function limparM(){
+  document.getElementById("m-data").value=today();
+  ["m-real","m-sku","m-produto","m-lider","m-op","m-meta"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+  document.getElementById("paradas-lista").innerHTML="";
+  paradaCount=0; calcM();
+}
+
+// ── HISTÓRICO ─────────────────────────────────────────────────
+function renderHist(){
+  document.getElementById("hist-sub").textContent=`Últimos ${Math.min(allTurnos.length,20)} turnos`;
+  document.getElementById("hist-lista").innerHTML=allTurnos.slice(0,20).map(t=>{
+    const d=parseFloat(t["Disponibilidade (%)"])||0;
+    const cls=dispCls(d);
+    return `<div class="turno-item">
+      <div class="ti-header">
+        <div class="ti-title">${t["Linha"]} · ${t["Turno"]} · ${fmtData(t["Data"])}</div>
+        <span class="badge ${cls}">${d}%</span>
+      </div>
+      <div class="ti-meta">
+        <span>SKU: ${t["SKU"]||"—"}</span>
+        <span>${t["Produto"]||"—"}</span>
+        <span>${t["Total Parado (min)"]||0}min parado</span>
+        <span>${t["Nº Paradas"]||0} par.</span>
+      </div>
+    </div>`;
+  }).join("")||`<div class="vazio">Nenhum turno registrado</div>`;
+}
+</script>
+</body>
+</html>
