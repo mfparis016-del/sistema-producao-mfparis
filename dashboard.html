@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — MFParis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --azul:#1a56a0;--azul-l:#e8f0fb;--azul-d:#0d3a7a;
+  --verde:#1a7a50;--verde-l:#e6f5ee;
+  --vermelho:#c0392b;--vermelho-l:#fdecea;
+  --amarelo:#d4820a;--amarelo-l:#fffbe6;
+  --cinza:#5a5a5a;--cinza-l:#f5f5f3;--cinza-ll:#fafaf8;
+  --borda:#ddd;--texto:#222;--texto-s:#777;
+  --r:8px;--r-lg:12px;--sombra:0 1px 4px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#eee9e0;color:var(--texto);min-height:100vh;}
+nav{background:#111;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:99;}
+nav .marca{color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+nav .marca span{width:7px;height:7px;border-radius:50%;background:#1a7a50;display:inline-block;}
+nav .links a{color:#aaa;font-size:12px;text-decoration:none;padding:5px 10px;border-radius:5px;margin-left:2px;}
+nav .links a:hover{background:rgba(255,255,255,.08);color:#fff;}
+nav .links a.ativo{background:rgba(255,255,255,.12);color:#fff;}
+nav .dir{display:flex;align-items:center;gap:10px;}
+nav .relogio{color:#666;font-size:11px;font-family:monospace;}
+.btn-atualizar{background:rgba(255,255,255,.08);border:none;color:#aaa;font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;}
+.btn-atualizar:hover{background:rgba(255,255,255,.15);color:#fff;}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+.filtros{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.filtros label{font-size:11px;font-weight:700;color:var(--texto-s);}
+.grupo-tab{display:flex;gap:3px;background:rgba(0,0,0,.06);padding:3px;border-radius:var(--r);}
+.tab{padding:5px 13px;font-size:11px;font-weight:600;border:none;background:transparent;cursor:pointer;border-radius:6px;color:var(--texto-s);transition:all .15s;font-family:inherit;}
+.tab.ativo{background:#fff;color:var(--texto);box-shadow:var(--sombra);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;}
+.kpi{background:#fff;border-radius:var(--r-lg);border:1px solid var(--borda);padding:15px 17px;box-shadow:var(--sombra);}
+.kpi .kl{font-size:10px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.kpi .kv{font-size:26px;font-weight:700;line-height:1;color:var(--texto);}
+.kpi .ks{font-size:11px;color:var(--texto-s);margin-top:4px;}
+.kpi .kb{height:3px;border-radius:2px;background:var(--cinza-l);margin-top:8px;}
+.kpi .kbf{height:100%;border-radius:2px;}
+.kpi.ok .kv{color:var(--verde);} .kpi.ok .kbf{background:var(--verde);}
+.kpi.warn .kv{color:var(--amarelo);} .kpi.warn .kbf{background:var(--amarelo);}
+.kpi.crit .kv{color:var(--vermelho);} .kpi.crit .kbf{background:var(--vermelho);}
+.sem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.sem{border-radius:var(--r-lg);padding:13px 15px;text-align:center;border:1px solid transparent;}
+.sem.ok{background:var(--verde-l);border-color:#9FE1CB;}
+.sem.warn{background:var(--amarelo-l);border-color:#FAC775;}
+.sem.crit{background:var(--vermelho-l);border-color:#F7C1C1;}
+.sem .sl{font-size:9px;font-weight:700;text-transform:uppercase;margin-bottom:3px;}
+.sem.ok .sl{color:#0F6E56;} .sem.warn .sl{color:#854F0B;} .sem.crit .sl{color:#A32D2D;}
+.sem .sv{font-size:26px;font-weight:700;}
+.sem.ok .sv{color:var(--verde);} .sem.warn .sv{color:var(--amarelo);} .sem.crit .sv{color:var(--vermelho);}
+.sem .sm{font-size:9px;color:var(--texto-s);margin-top:2px;}
+.sem .ss{font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;display:inline-block;margin-top:5px;}
+.sem.ok .ss{background:rgba(26,122,80,.12);color:#0F6E56;}
+.sem.warn .ss{background:rgba(212,130,10,.12);color:#854F0B;}
+.sem.crit .ss{background:rgba(192,57,43,.12);color:#A32D2D;}
+.dois-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:680px){.dois-col,.sem-grid{grid-template-columns:1fr;}}
+.card{background:#fff;border-radius:var(--r-lg);border:1px solid var(--borda);padding:17px 19px;box-shadow:var(--sombra);}
+.card-titulo{font-size:11px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.4px;margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;}
+.alerta-lista{display:flex;flex-direction:column;gap:6px;}
+.alerta{display:flex;align-items:flex-start;gap:8px;padding:8px 11px;border-radius:var(--r);border-left:3px solid transparent;}
+.alerta.crit{background:#fff5f5;border-left-color:var(--vermelho);}
+.alerta.warn{background:#fffbf0;border-left-color:var(--amarelo);}
+.alerta.info{background:#f0f7ff;border-left-color:var(--azul);}
+.alerta.ok{background:var(--verde-l);border-left-color:var(--verde);}
+.adot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.alerta.crit .adot{background:var(--vermelho);} .alerta.warn .adot{background:var(--amarelo);}
+.alerta.info .adot{background:var(--azul);} .alerta.ok .adot{background:var(--verde);}
+.atxt{font-size:12px;line-height:1.5;color:var(--texto);}
+.tabela-wrap{overflow-x:auto;}
+table.hist{width:100%;border-collapse:collapse;font-size:12px;}
+table.hist th{background:var(--cinza-l);padding:7px 9px;text-align:left;font-size:10px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--borda);}
+table.hist td{padding:7px 9px;border-bottom:1px solid var(--borda);color:var(--texto);}
+table.hist tr:last-child td{border-bottom:none;}
+table.hist tr:hover td{background:var(--cinza-ll);}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge.ok{background:var(--verde-l);color:#0F6E56;}
+.badge.warn{background:var(--amarelo-l);color:#854F0B;}
+.badge.crit{background:var(--vermelho-l);color:#A32D2D;}
+.vazio{text-align:center;padding:28px;color:var(--texto-s);font-size:13px;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;}
+.overlay.oculto{display:none;}
+.spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:giro .7s linear infinite;}
+@keyframes giro{to{transform:rotate(360deg);}}
+#atualizado{font-size:11px;color:var(--texto-s);margin-left:auto;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="marca"><span></span>MFParis — Controle de Produção</div>
+  <div class="links">
+    <a href="apontamento.html">Apontamento</a>
+    <a href="dashboard.html" class="ativo">Dashboard</a>
+    <a href="mobile.html">Mobile</a>
+  </div>
+  <div class="dir">
+    <span class="relogio" id="relogio">—</span>
+    <button class="btn-atualizar" onclick="carregarDados()">↺ Atualizar</button>
+  </div>
+</nav>
+<div class="overlay oculto" id="loading"><div class="spinner"></div></div>
+
+<div class="wrap">
+  <div class="filtros">
+    <label>Período:</label>
+    <div class="grupo-tab">
+      <button class="tab ativo" onclick="setPeriodo('hoje',this)">Hoje</button>
+      <button class="tab" onclick="setPeriodo('semana',this)">7 dias</button>
+      <button class="tab" onclick="setPeriodo('mes',this)">30 dias</button>
+    </div>
+    <label>Linha:</label>
+    <div class="grupo-tab">
+      <button class="tab ativo" onclick="setLinha('Todas',this)">Todas</button>
+      <button class="tab" onclick="setLinha('Láctea',this)">Láctea</button>
+      <button class="tab" onclick="setLinha('Sacaria',this)">Sacaria</button>
+      <button class="tab" onclick="setLinha('Café',this)">Café</button>
+    </div>
+    <span id="atualizado"></span>
+  </div>
+
+  <div class="kpi-grid" id="kpi-grid"><div class="kpi"><div class="kl">Carregando…</div><div class="kv">—</div></div></div>
+  <div class="sem-grid" id="sem-grid"></div>
+
+  <div class="dois-col">
+    <div class="card">
+      <div class="card-titulo">Pareto de causas de parada</div>
+      <div style="position:relative;height:210px;"><canvas id="pareto" role="img" aria-label="Pareto de causas">Pareto de causas de parada.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">Tendência de disponibilidade</div>
+      <div id="leg-trend" style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;color:var(--texto-s);"></div>
+      <div style="position:relative;height:180px;"><canvas id="trend" role="img" aria-label="Tendência">Tendência de disponibilidade.</canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-titulo">Alertas do período</div>
+    <div class="alerta-lista" id="alertas"><div class="vazio">Carregando…</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">Histórico de turnos <span id="hist-count" style="font-weight:400;font-size:10px;"></span></div>
+    <div class="tabela-wrap">
+      <table class="hist">
+        <thead><tr><th>Data</th><th>Linha</th><th>Turno</th><th>Produto</th><th>SKU</th><th>Produzido</th><th>Parado(min)</th><th>Paradas</th><th>Disp.</th><th>Status</th></tr></thead>
+        <tbody id="hist-body"><tr><td colspan="10" class="vazio">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️  Substitua pela URL do seu Apps Script após publicar
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec";
+
+let todosTurnos=[], todasParadas=[];
+let periodoFiltro="hoje", linhaFiltro="Todas";
+let grafPareto=null, grafTrend=null;
+
+window.addEventListener("DOMContentLoaded",()=>{
+  atualizarRelogio();
+  setInterval(atualizarRelogio,30000);
+  carregarDados();
+});
+
+function atualizarRelogio(){
+  document.getElementById("relogio").textContent=new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+
+async function carregarDados(){
+  document.getElementById("loading").classList.remove("oculto");
+  try{
+    const [rT,rP]=await Promise.all([
+      fetch(SCRIPT_URL+"?aba=Turnos&limite=300").then(r=>r.json()),
+      fetch(SCRIPT_URL+"?aba=Paradas&limite=500").then(r=>r.json())
+    ]);
+    todosTurnos=rT.dados||[];
+    todasParadas=rP.dados||[];
+    renderTudo();
+    document.getElementById("atualizado").textContent="Atualizado: "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){
+    console.error(e);
+    document.getElementById("kpi-grid").innerHTML=`<div class="kpi" style="grid-column:span 5"><div class="kl">Erro de conexão</div><div class="kv" style="font-size:14px;color:var(--vermelho);">Verifique o SCRIPT_URL no arquivo dashboard.html</div></div>`;
+  }
+  document.getElementById("loading").classList.add("oculto");
+}
+
+function setPeriodo(p,btn){
+  periodoFiltro=p;
+  btn.closest(".grupo-tab").querySelectorAll(".tab").forEach(b=>b.classList.toggle("ativo",b===btn));
+  renderTudo();
+}
+function setLinha(l,btn){
+  linhaFiltro=l;
+  btn.closest(".grupo-tab").querySelectorAll(".tab").forEach(b=>b.classList.toggle("ativo",b===btn));
+  renderTudo();
+}
+
+function dados(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const dias=periodoFiltro==="hoje"?0:periodoFiltro==="semana"?7:30;
+  const corte=new Date(); corte.setDate(corte.getDate()-dias);
+  const filtT=t=>{
+    const d=t["Data"]||""; const dt=new Date(d);
+    const ok=periodoFiltro==="hoje"?(d===hoje):(dt>=corte);
+    return ok&&(linhaFiltro==="Todas"||t["Linha"]===linhaFiltro);
+  };
+  const filtP=p=>{
+    const d=p["Data"]||""; const dt=new Date(d);
+    const ok=periodoFiltro==="hoje"?(d===hoje):(dt>=corte);
+    return ok&&(linhaFiltro==="Todas"||p["Linha"]===linhaFiltro);
+  };
+  return{turnos:todosTurnos.filter(filtT), paradas:todasParadas.filter(filtP)};
+}
+
+function dispCls(v){return v>=90?"ok":v>=80?"warn":"crit";}
+function fmtData(d){if(!d)return"—"; try{return new Date(d).toLocaleDateString("pt-BR");}catch{return d;}}
+
+function renderTudo(){
+  const{turnos,paradas}=dados();
+  renderKPIs(turnos,paradas);
+  renderSemaforo(turnos);
+  renderPareto(paradas);
+  renderTrend(turnos);
+  renderAlertas(turnos,paradas);
+  renderHistorico(turnos);
+}
+
+function renderKPIs(turnos,paradas){
+  if(!turnos.length){
+    document.getElementById("kpi-grid").innerHTML=`<div class="kpi" style="grid-column:span 5"><div class="kl">Sem dados no período</div><div class="kv">—</div><div class="ks">Nenhum turno registrado</div></div>`;
+    return;
+  }
+  const totalProd=turnos.reduce((a,t)=>a+(parseFloat(t["Total Produzido"])||0),0);
+  const totalMin=turnos.reduce((a,t)=>a+(parseFloat(t["Total Parado (min)"])||0),0);
+  const totalPar=turnos.reduce((a,t)=>a+(parseFloat(t["Nº Paradas"])||0),0);
+  const dispMedia=Math.round(turnos.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/turnos.length);
+  const cls=dispCls(dispMedia);
+  const retrab=paradas.filter(p=>p["Retrabalho/Descarte"]&&String(p["Retrabalho/Descarte"]).trim()).length;
+
+  document.getElementById("kpi-grid").innerHTML=`
+    <div class="kpi ${cls}">
+      <div class="kl">Disponibilidade média</div>
+      <div class="kv">${dispMedia}%</div>
+      <div class="ks">Meta: 90% · ${turnos.length} turno(s)</div>
+      <div class="kb"><div class="kbf" style="width:${Math.min(100,dispMedia)}%;"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kl">Total produzido</div>
+      <div class="kv">${totalProd.toLocaleString("pt-BR")}</div>
+      <div class="ks">${turnos.length} turno(s) registrado(s)</div>
+    </div>
+    <div class="kpi ${totalMin>200?"crit":totalMin>80?"warn":"ok"}">
+      <div class="kl">Total parado</div>
+      <div class="kv">${totalMin} min</div>
+      <div class="ks">${totalPar} parada(s)</div>
+    </div>
+    <div class="kpi">
+      <div class="kl">Média por parada</div>
+      <div class="kv">${totalPar>0?Math.round(totalMin/totalPar):0} min</div>
+      <div class="ks">Tempo médio</div>
+    </div>
+    <div class="kpi ${retrab>0?"warn":"ok"}">
+      <div class="kl">Retrabalhos</div>
+      <div class="kv">${retrab}</div>
+      <div class="ks">Ocorrências</div>
+    </div>`;
+}
+
+function renderSemaforo(turnos){
+  const linhas=["Láctea","Sacaria","Café"];
+  document.getElementById("sem-grid").innerHTML=linhas.map(l=>{
+    const lt=todosTurnos.filter(t=>t["Linha"]===l);
+    if(!lt.length) return `<div class="sem ok"><div class="sl">${l}</div><div class="sv">—</div><div class="sm">Sem dados</div><div class="ss">Sem registro</div></div>`;
+    const d=Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length);
+    const c=dispCls(d);
+    return `<div class="sem ${c}"><div class="sl">${l}</div><div class="sv">${d}%</div><div class="sm">Meta 90% · ${lt.length} turno(s)</div><div class="ss">${c==="ok"?"✓ OK":c==="warn"?"Atenção":"Crítico"}</div></div>`;
+  }).join("");
+}
+
+function renderPareto(paradas){
+  const tot={};
+  const CAUSAS={MC:"Manut. Corretiva",MP:"Manut. Preventiva",SE:"Setup/Changeover",FI:"Falta Insumo",QR:"Qualidade",AO:"Ag. Operador",PP:"Parada Prog.",UT:"Utilidades",OT:"Outro"};
+  paradas.forEach(p=>{
+    const c=p["Causa (sigla)"]||p["Causa (descrição)"]||"";
+    if(c){const l=CAUSAS[c]||c; tot[l]=(tot[l]||0)+(parseFloat(p["Duração (min)"])||0);}
+  });
+  const sorted=Object.entries(tot).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(grafPareto){grafPareto.destroy();grafPareto=null;}
+  if(!sorted.length){document.getElementById("pareto").parentElement.innerHTML=`<div class="vazio">Sem paradas no período</div>`;return;}
+  grafPareto=new Chart(document.getElementById("pareto"),{
+    type:"bar",
+    data:{labels:sorted.map(([l])=>l),datasets:[{label:"Minutos",data:sorted.map(([,v])=>v),backgroundColor:["#1a56a0","#2a66b0","#3a76c0","#4a86d0","#5a96e0","#6aa6f0","#7ab6ff","#8ac6ff"],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},callback:v=>v+"m"},grid:{color:"rgba(0,0,0,.04)"}},y:{ticks:{font:{size:10}}}}}
+  });
+}
+
+function renderTrend(turnos){
+  const linhas=["Láctea","Sacaria","Café"];
+  const cores={"Láctea":"#1a56a0","Sacaria":"#1a7a50","Café":"#7a3a0a"};
+  const ult=[...turnos].sort((a,b)=>(a["Data"]>b["Data"]?1:-1)).slice(-14);
+  const labels=[...new Set(ult.map(t=>fmtData(t["Data"])))];
+  const datasets=linhas.map(l=>({
+    label:l,
+    data:labels.map(d=>{const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===d);return lt.length?Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length):null;}),
+    borderColor:cores[l],backgroundColor:cores[l]+"22",tension:.3,fill:true,pointRadius:3,spanGaps:true
+  }));
+  document.getElementById("leg-trend").innerHTML=linhas.map(l=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${cores[l]};display:inline-block;"></span>${l}</span>`).join("");
+  if(grafTrend){grafTrend.destroy();grafTrend=null;}
+  if(!labels.length) return;
+  grafTrend=new Chart(document.getElementById("trend"),{
+    type:"line",data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:60,max:100,ticks:{callback:v=>v+"%",font:{size:9}},grid:{color:"rgba(0,0,0,.04)"}},x:{ticks:{font:{size:9}},grid:{display:false}}}}
+  });
+}
+
+function renderAlertas(turnos,paradas){
+  const al=[];
+  paradas.filter(p=>parseFloat(p["Duração (min)"])>=60).forEach(p=>al.push({cls:"crit",txt:`Parada longa: ${p["Duração (min)"]} min — ${p["Causa (descrição)"]||p["Causa (sigla)"]} · ${p["Linha"]} · ${fmtData(p["Data"])}`}));
+  paradas.filter(p=>{const d=parseFloat(p["Duração (min)"]);return d>=30&&d<60;}).forEach(p=>al.push({cls:"warn",txt:`Parada de ${p["Duração (min)"]} min — ${p["Causa (descrição)"]||p["Causa (sigla)"]} · ${p["Linha"]} · ${fmtData(p["Data"])}`}));
+  turnos.filter(t=>(parseFloat(t["Disponibilidade (%)"])||0)<90).forEach(t=>al.push({cls:"warn",txt:`Disponib. ${t["Disponibilidade (%)"]}% abaixo da meta — ${t["Linha"]} · ${fmtData(t["Data"])} · ${t["Turno"]}`}));
+  paradas.filter(p=>p["Retrabalho/Descarte"]&&String(p["Retrabalho/Descarte"]).trim()).forEach(p=>al.push({cls:"info",txt:`Retrabalho: ${p["Retrabalho/Descarte"]} — ${p["Linha"]} · ${fmtData(p["Data"])}`}));
+  if(!al.length) al.push({cls:"ok",txt:"Nenhum alerta no período selecionado"});
+  document.getElementById("alertas").innerHTML=al.slice(0,10).map(a=>`<div class="alerta ${a.cls}"><div class="adot"></div><div class="atxt">${a.txt}</div></div>`).join("");
+}
+
+function renderHistorico(turnos){
+  document.getElementById("hist-count").textContent=`— ${turnos.length} registro(s)`;
+  if(!turnos.length){document.getElementById("hist-body").innerHTML=`<tr><td colspan="10" class="vazio">Nenhum turno no período</td></tr>`;return;}
+  document.getElementById("hist-body").innerHTML=turnos.map(t=>{
+    const d=parseFloat(t["Disponibilidade (%)"])||0;
+    const cls=dispCls(d);
+    return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Linha"]||"—"}</td><td>${t["Turno"]||"—"}</td><td>${t["Produto"]||"—"}</td><td>${t["SKU"]||"—"}</td><td>${(parseFloat(t["Total Produzido"])||0).toLocaleString("pt-BR")}</td><td>${t["Total Parado (min)"]||0}</td><td>${t["Nº Paradas"]||0}</td><td><span class="badge ${cls}">${d}%</span></td><td><span class="badge ${cls}">${cls==="ok"?"OK":cls==="warn"?"Atenção":"Crítico"}</span></td></tr>`;
+  }).join("");
+}
+</script>
+</body>
+</html>

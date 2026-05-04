@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apontamento — MFParis</title>
+<style>
+:root{
+  --azul:#1a56a0;--azul-l:#e8f0fb;--azul-d:#0d3a7a;
+  --verde:#1a7a50;--verde-l:#e6f5ee;
+  --vermelho:#c0392b;--vermelho-l:#fdecea;
+  --amarelo-l:#fffbe6;
+  --cinza:#5a5a5a;--cinza-l:#f5f5f3;--cinza-ll:#fafaf8;
+  --borda:#ddd;--texto:#222;--texto-s:#777;
+  --r:8px;--r-lg:12px;--sombra:0 1px 4px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#eee9e0;color:var(--texto);min-height:100vh;}
+nav{background:#111;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:99;}
+nav .marca{color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+nav .marca span{width:7px;height:7px;border-radius:50%;background:#1a7a50;display:inline-block;}
+nav .links a{color:#aaa;font-size:12px;text-decoration:none;padding:5px 10px;border-radius:5px;margin-left:2px;}
+nav .links a:hover{background:rgba(255,255,255,.08);color:#fff;}
+nav .links a.ativo{background:rgba(255,255,255,.12);color:#fff;}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px;}
+.topo{margin-bottom:18px;}
+.topo h1{font-size:19px;font-weight:700;}
+.topo p{font-size:12px;color:var(--texto-s);margin-top:3px;}
+.card{background:#fff;border-radius:var(--r-lg);border:1px solid var(--borda);padding:18px 20px;margin-bottom:14px;box-shadow:var(--sombra);}
+.card-titulo{font-size:11px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.num{width:20px;height:20px;border-radius:6px;background:var(--azul-l);color:var(--azul);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.grade{display:grid;gap:10px;}
+.g2{grid-template-columns:1fr 1fr;}
+.g3{grid-template-columns:1fr 1fr 1fr;}
+.g4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+.fl{display:flex;flex-direction:column;gap:4px;}
+.fl label{font-size:11px;font-weight:600;color:var(--texto-s);text-transform:uppercase;letter-spacing:.3px;}
+.fl input,.fl select,.fl textarea{font-size:13px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--borda);background:var(--cinza-ll);color:var(--texto);font-family:inherit;transition:border .15s;}
+.fl input:focus,.fl select:focus,.fl textarea:focus{outline:none;border-color:var(--azul);background:#fff;box-shadow:0 0 0 3px rgba(26,86,160,.1);}
+.fl input[readonly]{background:var(--cinza-l);color:var(--texto-s);}
+.tabela-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--borda);}
+table.hora{width:100%;border-collapse:collapse;min-width:820px;font-size:12px;}
+table.hora thead th{background:#111;color:#bbb;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:8px 6px;border-right:1px solid rgba(255,255,255,.06);white-space:nowrap;}
+table.hora tbody tr{border-bottom:1px solid var(--borda);}
+table.hora tbody tr:last-child{border-bottom:none;}
+table.hora tbody tr:hover{background:var(--cinza-l);}
+table.hora tbody tr.com-parada{background:#fff5f5;}
+table.hora td{padding:4px 5px;border-right:1px solid #eee;vertical-align:middle;}
+table.hora td:first-child{padding-left:12px;font-weight:700;font-size:11px;color:var(--texto-s);white-space:nowrap;background:var(--cinza-ll);min-width:80px;}
+table.hora td input,table.hora td select{width:100%;font-size:11px;padding:5px 6px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--texto);font-family:inherit;transition:all .15s;}
+table.hora td input:hover,table.hora td select:hover{border-color:var(--borda);background:#fff;}
+table.hora td input:focus,table.hora td select:focus{outline:none;border-color:var(--azul);background:#fff;box-shadow:0 0 0 2px rgba(26,86,160,.1);}
+table.hora td.dur{font-weight:700;color:var(--vermelho);text-align:center;background:#fff8f8;font-size:12px;}
+table.hora td.dur.zero{color:var(--texto-s);background:transparent;font-weight:400;}
+.totais{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:600px){.totais{grid-template-columns:1fr 1fr;}}
+.tot{background:var(--cinza-l);border-radius:var(--r);padding:12px;text-align:center;}
+.tot .tl{font-size:10px;font-weight:700;color:var(--texto-s);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.tot .tv{font-size:22px;font-weight:700;color:var(--texto);}
+.tot.ok .tv{color:var(--verde);}
+.tot.warn .tv{color:#d4820a;}
+.tot.crit .tv{color:var(--vermelho);}
+.btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.btn{padding:9px 20px;font-size:13px;font-weight:700;font-family:inherit;border-radius:var(--r);cursor:pointer;border:1px solid var(--borda);background:#fff;color:var(--texto);transition:all .15s;}
+.btn:hover{background:var(--cinza-l);}
+.btn:active{transform:scale(.98);}
+.btn.primario{background:var(--azul);color:#fff;border-color:var(--azul);}
+.btn.primario:hover{background:var(--azul-d);}
+.btn.primario:disabled{background:#aaa;border-color:#aaa;cursor:not-allowed;}
+.legenda{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--texto-s);}
+.leg-cod{width:24px;height:16px;border-radius:3px;background:var(--azul);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.msg{font-size:12px;color:var(--texto-s);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;}
+.overlay.oculto{display:none;}
+.spinner{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:giro .7s linear infinite;}
+@keyframes giro{to{transform:rotate(360deg);}}
+#toast{position:fixed;bottom:22px;right:22px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="marca"><span></span>MFParis — Controle de Produção</div>
+  <div class="links">
+    <a href="apontamento.html" class="ativo">Apontamento</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="mobile.html">Mobile</a>
+  </div>
+</nav>
+<div class="overlay oculto" id="loading"><div class="spinner"></div></div>
+<div id="toast"></div>
+<div class="wrap">
+  <div class="topo">
+    <h1>Apontamento de Turno</h1>
+    <p>Preencha os dados do turno. Os dados são salvos direto na planilha Google Sheets da MFParis.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo"><div class="num">1</div>Identificação do turno</div>
+    <div class="grade g4" style="margin-bottom:10px;">
+      <div class="fl"><label>Data</label><input type="date" id="f-data"></div>
+      <div class="fl"><label>Linha</label>
+        <select id="f-linha"><option>Láctea</option><option>Sacaria</option><option>Café</option></select>
+      </div>
+      <div class="fl"><label>Turno</label>
+        <select id="f-turno"><option>Turno A</option><option>Turno B</option><option>Turno C</option></select>
+      </div>
+      <div class="fl"><label>Líder</label><input type="text" id="f-lider" placeholder="Nome do líder"></div>
+    </div>
+    <div class="grade g4">
+      <div class="fl"><label>Operador</label><input type="text" id="f-op" placeholder="Nome(s)"></div>
+      <div class="fl"><label>SKU</label><input type="text" id="f-sku" placeholder="Ex: LT-001"></div>
+      <div class="fl" style="grid-column:span 2;"><label>Produto</label><input type="text" id="f-produto" placeholder="Nome completo do produto"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo"><div class="num">2</div>Produção hora a hora <span style="margin-left:auto;font-size:10px;font-weight:400;color:var(--texto-s);">Linhas em vermelho = parada registrada</span></div>
+    <div class="tabela-wrap">
+      <table class="hora">
+        <thead>
+          <tr>
+            <th style="width:80px;">Hora</th>
+            <th style="width:64px;">Meta/h</th>
+            <th style="width:72px;">Realizado</th>
+            <th style="width:62px;">P. Início</th>
+            <th style="width:62px;">P. Fim</th>
+            <th style="width:50px;">Min.</th>
+            <th style="width:130px;">Causa da Parada</th>
+            <th style="width:110px;">Equipamento</th>
+            <th style="width:80px;">Retrab./Desc.</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-hora"></tbody>
+      </table>
+    </div>
+    <div class="legenda" id="legenda"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo"><div class="num">3</div>Totais do turno</div>
+    <div class="totais">
+      <div class="tot"><div class="tl">Qtd. Produzida</div><div class="tv" id="tot-prod">0</div></div>
+      <div class="tot"><div class="tl">Total Parado (min)</div><div class="tv" id="tot-min">0</div></div>
+      <div class="tot"><div class="tl">Nº de Paradas</div><div class="tv" id="tot-np">0</div></div>
+      <div class="tot"><div class="tl">Disponibilidade</div><div class="tv" id="tot-disp">—</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px 20px;">
+    <div class="btns">
+      <button class="btn primario" id="btn-salvar" onclick="salvar()">Salvar turno na planilha</button>
+      <button class="btn" onclick="limpar()">Limpar</button>
+      <button class="btn" onclick="window.location.href='dashboard.html'">Ver dashboard →</button>
+      <span class="msg" id="msg-status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID = "17uaHzJ6tLuQysSdrK3dwPRX_YYmuQQpaOAymxa2rFt0";
+const BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=`;
+const APPEND = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
+
+const CAUSAS = {MC:"Manut. Corretiva",MP:"Manut. Preventiva",SE:"Setup/Changeover",FI:"Falta de Insumo",QR:"Qualidade/Retrabalho",AO:"Ag. Operador",PP:"Parada Programada",UT:"Utilidades",OT:"Outro"};
+const HORAS_INI = 6, N_HORAS = 10, TURNO_MIN = 600;
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function diffMin(a,b){
+  if(!a||!b) return 0;
+  const [ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number);
+  let d=(bh*60+bm)-(ah*60+am); if(d<0)d+=1440; return d;
+}
+function calcDisp(min){ return Math.max(0,Math.round((1-min/TURNO_MIN)*100)); }
+function dispCls(v){ return v>=90?"ok":v>=80?"warn":"crit"; }
+function toast(msg,tipo="ok"){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.style.background=tipo==="ok"?"#1a7a50":tipo==="err"?"#c0392b":"#d4820a";
+  t.style.color="#fff"; t.style.opacity="1";
+  setTimeout(()=>t.style.opacity="0",3500);
+}
+function loading(v){ document.getElementById("loading").classList.toggle("oculto",!v); }
+
+function buildTabela(){
+  const corp=document.getElementById("corpo-hora");
+  corp.innerHTML="";
+  for(let i=0;i<N_HORAS;i++){
+    const h=HORAS_INI+i;
+    const lbl=`${String(h).padStart(2,"0")}:00 – ${String(h+1).padStart(2,"0")}:00`;
+    const tr=document.createElement("tr");
+    tr.id=`hr-${i}`;
+    tr.innerHTML=`
+      <td>${lbl}</td>
+      <td><input type="number" id="meta-${i}" placeholder="—" min="0" style="width:56px;" oninput="calcTotais()"></td>
+      <td><input type="number" id="real-${i}" placeholder="0" min="0" style="width:64px;" oninput="calcTotais()"></td>
+      <td><input type="time" id="pi-${i}" oninput="onParada(${i})"></td>
+      <td><input type="time" id="pf-${i}" oninput="onParada(${i})"></td>
+      <td class="dur zero" id="dur-${i}">—</td>
+      <td><select id="causa-${i}" style="font-size:11px;" oninput="onParada(${i})">
+        <option value="">—</option>
+        ${Object.entries(CAUSAS).map(([k,v])=>`<option value="${k}">${k} – ${v}</option>`).join("")}
+      </select></td>
+      <td><input type="text" id="equip-${i}" placeholder="Equipamento" style="width:100px;"></td>
+      <td><input type="text" id="ret-${i}" placeholder="Tipo" style="width:72px;"></td>
+      <td><input type="text" id="obs-${i}" placeholder="Observação livre"></td>`;
+    corp.appendChild(tr);
+  }
+  // Legenda
+  const leg=document.getElementById("legenda");
+  leg.innerHTML=`<span style="font-size:11px;font-weight:700;color:var(--texto-s);margin-right:4px;">Causas:</span>`+
+    Object.entries(CAUSAS).map(([k,v])=>`<div class="leg"><div class="leg-cod">${k}</div>${v}</div>`).join("");
+}
+
+function onParada(i){
+  const pi=document.getElementById(`pi-${i}`).value;
+  const pf=document.getElementById(`pf-${i}`).value;
+  const min=diffMin(pi,pf);
+  const dc=document.getElementById(`dur-${i}`);
+  dc.textContent=min>0?min+" min":"—";
+  dc.className="dur"+(min===0?" zero":"");
+  document.getElementById(`hr-${i}`).classList.toggle("com-parada",min>0);
+  calcTotais();
+}
+
+function calcTotais(){
+  let totalR=0,totalMin=0,nP=0;
+  for(let i=0;i<N_HORAS;i++){
+    totalR+=parseFloat(document.getElementById(`real-${i}`).value)||0;
+    const min=diffMin(document.getElementById(`pi-${i}`).value,document.getElementById(`pf-${i}`).value);
+    if(min>0){totalMin+=min;nP++;}
+  }
+  const disp=totalR>0||nP>0?calcDisp(totalMin):null;
+  document.getElementById("tot-prod").textContent=totalR.toLocaleString("pt-BR");
+  document.getElementById("tot-min").textContent=totalMin;
+  document.getElementById("tot-np").textContent=nP;
+  document.getElementById("tot-disp").textContent=disp!==null?disp+"%":"—";
+  const box=document.getElementById("tot-disp").parentElement;
+  box.className="tot"+(disp===null?"":" "+dispCls(disp));
+}
+
+async function salvar(){
+  const data=document.getElementById("f-data").value;
+  const linha=document.getElementById("f-linha").value;
+  const produto=document.getElementById("f-produto").value;
+  if(!data||!linha||!produto){ toast("Preencha Data, Linha e Produto antes de salvar.","warn"); return; }
+
+  document.getElementById("btn-salvar").disabled=true;
+  document.getElementById("msg-status").textContent="Salvando…";
+  loading(true);
+
+  try{
+    let totalR=0,totalMin=0,nP=0;
+    const linhasParada=[];
+    for(let i=0;i<N_HORAS;i++){
+      const h=HORAS_INI+i;
+      const real=parseFloat(document.getElementById(`real-${i}`).value)||0;
+      const meta=parseFloat(document.getElementById(`meta-${i}`).value)||0;
+      const pi=document.getElementById(`pi-${i}`).value;
+      const pf=document.getElementById(`pf-${i}`).value;
+      const causa=document.getElementById(`causa-${i}`).value;
+      const equip=document.getElementById(`equip-${i}`).value;
+      const ret=document.getElementById(`ret-${i}`).value;
+      const obs=document.getElementById(`obs-${i}`).value;
+      const dur=diffMin(pi,pf);
+      totalR+=real;
+      if(dur>0){totalMin+=dur;nP++;}
+      if(dur>0||real>0){
+        linhasParada.push([data,linha,document.getElementById("f-turno").value,
+          document.getElementById("f-sku").value,`${String(h).padStart(2,"0")}:00`,
+          meta,real,pi||"",pf||"",dur,causa,CAUSAS[causa]||"",equip,ret,obs]);
+      }
+    }
+    const disp=calcDisp(totalMin);
+    const turno=[data,linha,document.getElementById("f-turno").value,
+      document.getElementById("f-lider").value,document.getElementById("f-op").value,
+      document.getElementById("f-sku").value,produto,totalR,totalMin,nP,disp,"Salvo",
+      new Date().toLocaleString("pt-BR")];
+
+    // Salva na aba Turnos
+    await appendRows("Turnos",[turno]);
+    // Salva paradas na aba Paradas
+    if(linhasParada.length) await appendRows("Paradas",linhasParada);
+
+    toast("Turno salvo com sucesso!","ok");
+    document.getElementById("msg-status").textContent=`✓ Salvo às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`;
+  } catch(e){
+    console.error(e);
+    toast("Erro ao salvar. Veja o console.","err");
+    document.getElementById("msg-status").textContent="Erro ao salvar.";
+  }
+  document.getElementById("btn-salvar").disabled=false;
+  loading(false);
+}
+
+async function appendRows(aba, rows){
+  const url=`https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec`;
+  const r=await fetch(url,{
+    method:"POST",
+    body:JSON.stringify({aba,rows}),
+    headers:{"Content-Type":"application/json"}
+  });
+  if(!r.ok) throw new Error("Falha ao salvar");
+  return r.json();
+}
+
+function limpar(){
+  if(!confirm("Limpar todos os campos?")) return;
+  document.getElementById("f-data").value=today();
+  document.getElementById("f-sku").value="";
+  document.getElementById("f-produto").value="";
+  document.getElementById("f-op").value="";
+  document.getElementById("f-lider").value="";
+  buildTabela(); calcTotais();
+}
+
+document.getElementById("f-data").value=today();
+buildTabela(); calcTotais();
+</script>
+</body>
+</html>
