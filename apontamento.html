@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -165,7 +166,7 @@ const BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out
 const APPEND = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
 
 const CAUSAS = {MC:"Manut. Corretiva",MP:"Manut. Preventiva",SE:"Setup/Changeover",FI:"Falta de Insumo",QR:"Qualidade/Retrabalho",AO:"Ag. Operador",PP:"Parada Programada",UT:"Utilidades",OT:"Outro"};
-const HORAS_INI = 6, N_HORAS = 10, TURNO_MIN = 600;
+const HORAS_INI = 8, N_HORAS = 10, TURNO_MIN = 600;
 
 function today(){ return new Date().toISOString().slice(0,10); }
 function diffMin(a,b){
@@ -296,14 +297,27 @@ async function salvar(){
 }
 
 async function appendRows(aba, rows){
-  const url=`https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec`;
-  const r=await fetch(url,{
-    method:"POST",
-    body:JSON.stringify({aba,rows}),
-    headers:{"Content-Type":"application/json"}
+  const url="https://script.google.com/macros/s/AKfycbxGDf_cxPOND0xNr5-dlqM_G16UZIjXjEiQUadR4Wwuz2HVy6P2VVSfHqipWcxApG4d/exec";
+  const payload = JSON.stringify({aba, rows});
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Date.now();
+    window[cb] = (data) => {
+      delete window[cb];
+      document.getElementById("jsonp-"+cb)?.remove();
+      if(data.ok) resolve(data);
+      else reject(new Error(data.erro||"Erro"));
+    };
+    const form = new FormData();
+    form.append("payload", payload);
+    form.append("callback", cb);
+    fetch(url + "?callback=" + cb, {
+      method: "POST",
+      mode: "no-cors",
+      body: form
+    }).then(() => {
+      setTimeout(() => resolve({ok:true}), 2000);
+    }).catch(reject);
   });
-  if(!r.ok) throw new Error("Falha ao salvar");
-  return r.json();
 }
 
 function limpar(){
