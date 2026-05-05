@@ -322,47 +322,58 @@ function setLinha(l,btn){
 }
 
 function dados(){
-  const hoje=new Date().toISOString().slice(0,10);
-  const dias=periodoFiltro==="hoje"?0:periodoFiltro==="semana"?7:30;
-  const corte=new Date(); corte.setDate(corte.getDate()-dias);
+  const hoje = new Date().toISOString().slice(0,10); // "2026-05-04"
+  const dias  = periodoFiltro==="hoje"?0:periodoFiltro==="semana"?7:30;
+  const corte = new Date(); corte.setDate(corte.getDate()-dias);
+  const corteStr = corte.toISOString().slice(0,10);
+
+  // Get filter dates from inputs (they return ISO format "2026-05-04")
   const fDe  = document.getElementById("f-de")?.value  || "";
   const fAte = document.getElementById("f-ate")?.value || "";
-  const filtT=t=>{
-    const d=normDate(t["Data"]||"");
+
+  const filtrar = (item) => {
+    // Normalize the date from Sheets to ISO "yyyy-mm-dd"
+    const d = normDate(item["Data"] || "");
+    if(!d) return false;
+
     let ok;
-    if(fDe && fAte) ok = d>=fDe && d<=fAte;
-    else if(fDe)    ok = d>=fDe;
-    else if(fAte)   ok = d<=fAte;
-    else { ok=periodoFiltro==="hoje"?(d===hoje):(d>=normDate(corte.toISOString())); }
-    return ok&&(linhaFiltro==="Todas"||t["Linha"]===linhaFiltro);
+    if(fDe && fAte){
+      ok = d >= fDe && d <= fAte;
+    } else if(fDe){
+      ok = d >= fDe;
+    } else if(fAte){
+      ok = d <= fAte;
+    } else {
+      ok = periodoFiltro==="hoje" ? (d === hoje) : (d >= corteStr);
+    }
+    return ok;
   };
-  const filtP=p=>{
-    const d=normDate(p["Data"]||"");
-    let ok;
-    if(fDe && fAte) ok = d>=fDe && d<=fAte;
-    else if(fDe)    ok = d>=fDe;
-    else if(fAte)   ok = d<=fAte;
-    else { ok=periodoFiltro==="hoje"?(d===hoje):(d>=normDate(corte.toISOString())); }
-    return ok&&(linhaFiltro==="Todas"||p["Linha"]===linhaFiltro);
-  };
-  return{turnos:todosTurnos.filter(filtT), paradas:todasParadas.filter(filtP)};
+
+  const filtT = t => filtrar(t) && (linhaFiltro==="Todas" || t["Linha"]===linhaFiltro);
+  const filtP = p => filtrar(p) && (linhaFiltro==="Todas" || p["Linha"]===linhaFiltro);
+
+  return { turnos: todosTurnos.filter(filtT), paradas: todasParadas.filter(filtP) };
 }
 
 function dispCls(v){return v>=90?"ok":v>=80?"warn":"crit";}
 
 function normDate(d){
-  // Normalize any date format to yyyy-mm-dd for comparison
   if(!d) return "";
   const s = String(d).trim();
-  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
-    const [day,m,y]=s.split("/");
-    return `${y}-${m}-${day}`;
+  // ISO format: "2026-05-04" or "2026-05-04T..."
+  if(s.length >= 10 && s[4] === "-" && s[7] === "-"){
+    return s.slice(0,10);
   }
-  try {
-    const dt = new Date(d);
+  // BR format: "04/05/2026"
+  if(s.length === 10 && s[2] === "/" && s[5] === "/"){
+    const day=s.slice(0,2), m=s.slice(3,5), y=s.slice(6,10);
+    return y+"-"+m+"-"+day;
+  }
+  // Try parsing as date
+  try{
+    const dt = new Date(s);
     if(!isNaN(dt.getTime())) return dt.toISOString().slice(0,10);
-  } catch{}
+  }catch{}
   return s;
 }
 
