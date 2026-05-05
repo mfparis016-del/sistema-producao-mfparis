@@ -64,7 +64,10 @@ function renderDispLinha(turnos){
   const cores=["#1a56a0","#1a7a50","#7a3a0a"];
   const medias=linhas.map(l=>{
     const lt=turnos.filter(t=>t["Linha"]===l);
-    return lt.length?Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length):0;
+    return lt.length?Math.round(lt.reduce((a,t)=>{
+      const minP=parseFloat(t["Total Parado (min)"])||0;
+      return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
+    },0)/lt.length):0;
   });
   const el=document.getElementById("disp-linha");
   if(!el) return;
@@ -257,6 +260,8 @@ window.addEventListener("DOMContentLoaded",()=>{
   const set7=new Date(); set7.setDate(set7.getDate()-7);
   document.getElementById('f-de').value=set7.toISOString().slice(0,10);
   document.getElementById('f-ate').value=hj;
+  document.getElementById('f-de').max=hj;
+  document.getElementById('f-ate').max=hj;
   carregarDados();
 });
 
@@ -323,27 +328,54 @@ function dados(){
   const fDe  = document.getElementById("f-de")?.value  || "";
   const fAte = document.getElementById("f-ate")?.value || "";
   const filtT=t=>{
-    const d=t["Data"]||"";
+    const d=normDate(t["Data"]||"");
     let ok;
     if(fDe && fAte) ok = d>=fDe && d<=fAte;
     else if(fDe)    ok = d>=fDe;
     else if(fAte)   ok = d<=fAte;
-    else { const dt=new Date(d); ok=periodoFiltro==="hoje"?(d===hoje):(dt>=corte); }
+    else { ok=periodoFiltro==="hoje"?(d===hoje):(d>=normDate(corte.toISOString())); }
     return ok&&(linhaFiltro==="Todas"||t["Linha"]===linhaFiltro);
   };
   const filtP=p=>{
-    const d=p["Data"]||"";
+    const d=normDate(p["Data"]||"");
     let ok;
     if(fDe && fAte) ok = d>=fDe && d<=fAte;
     else if(fDe)    ok = d>=fDe;
     else if(fAte)   ok = d<=fAte;
-    else { const dt=new Date(d); ok=periodoFiltro==="hoje"?(d===hoje):(dt>=corte); }
+    else { ok=periodoFiltro==="hoje"?(d===hoje):(d>=normDate(corte.toISOString())); }
     return ok&&(linhaFiltro==="Todas"||p["Linha"]===linhaFiltro);
   };
   return{turnos:todosTurnos.filter(filtT), paradas:todasParadas.filter(filtP)};
 }
 
 function dispCls(v){return v>=90?"ok":v>=80?"warn":"crit";}
+
+function normDate(d){
+  // Normalize any date format to yyyy-mm-dd for comparison
+  if(!d) return "";
+  const s = String(d).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
+    const [day,m,y]=s.split("/");
+    return `${y}-${m}-${day}`;
+  }
+  try {
+    const dt = new Date(d);
+    if(!isNaN(dt.getTime())) return dt.toISOString().slice(0,10);
+  } catch{}
+  return s;
+}
+
+function isSexta(d){
+  const s = normDate(d);
+  if(!s) return false;
+  return new Date(s+"T12:00:00").getDay() === 5;
+}
+
+function tempoDisponivel(d){
+  // Segunda a quinta: 495 min | Sexta: 435 min
+  return isSexta(d) ? 435 : 495;
+}
 function fmtData(d){if(!d)return"—"; try{return new Date(d).toLocaleDateString("pt-BR");}catch{return d;}}
 
 function renderTudo(){
@@ -366,7 +398,12 @@ function renderKPIs(turnos,paradas){
   const totalProd=turnos.reduce((a,t)=>a+(parseFloat(t["Total Produzido"])||0),0);
   const totalMin=turnos.reduce((a,t)=>a+(parseFloat(t["Total Parado (min)"])||0),0);
   const totalPar=turnos.reduce((a,t)=>a+(parseFloat(t["Nº Paradas"])||0),0);
-  const dispMedia=Math.round(turnos.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/turnos.length);
+  // Recalculate disponibilidade using real available time (495 min seg-qui, 435 sexta)
+  const dispMedia=Math.round(turnos.reduce((a,t)=>{
+    const minParado=parseFloat(t["Total Parado (min)"])||0;
+    const dispReal=Math.max(0,Math.round((1-minParado/tempoDisponivel(t["Data"]))*100));
+    return a+dispReal;
+  },0)/turnos.length);
   const cls=dispCls(dispMedia);
   const retrab=paradas.filter(p=>p["Retrabalho/Descarte"]&&String(p["Retrabalho/Descarte"]).trim()).length;
 
@@ -404,7 +441,10 @@ function renderSemaforo(turnos){
   document.getElementById("sem-grid").innerHTML=linhas.map(l=>{
     const lt=todosTurnos.filter(t=>t["Linha"]===l);
     if(!lt.length) return `<div class="sem ok"><div class="sl">${l}</div><div class="sv">—</div><div class="sm">Sem dados</div><div class="ss">Sem registro</div></div>`;
-    const d=Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length);
+    const d=Math.round(lt.reduce((a,t)=>{
+      const minP=parseFloat(t["Total Parado (min)"])||0;
+      return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
+    },0)/lt.length);
     const c=dispCls(d);
     return `<div class="sem ${c}"><div class="sl">${l}</div><div class="sv">${d}%</div><div class="sm">Meta 90% · ${lt.length} turno(s)</div><div class="ss">${c==="ok"?"✓ OK":c==="warn"?"Atenção":"Crítico"}</div></div>`;
   }).join("");
@@ -442,7 +482,7 @@ function renderTrend(turnos){
   const labels=[...new Set(ult.map(t=>fmtData(t["Data"])))];
   const datasets=linhas.map(l=>({
     label:l,
-    data:labels.map(d=>{const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===d);return lt.length?Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length):null;}),
+    data:labels.map(d=>{const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===d);return lt.length?Math.round(lt.reduce((a,t)=>{const minP=parseFloat(t["Total Parado (min)"])||0;return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));},0)/lt.length):null;}),
     borderColor:cores[l],backgroundColor:cores[l]+"22",tension:.3,fill:true,pointRadius:3,spanGaps:true
   }));
   document.getElementById("leg-trend").innerHTML=linhas.map(l=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${cores[l]};display:inline-block;"></span>${l}</span>`).join("");
@@ -468,9 +508,10 @@ function renderHistorico(turnos){
   document.getElementById("hist-count").textContent=`— ${turnos.length} registro(s)`;
   if(!turnos.length){document.getElementById("hist-body").innerHTML=`<tr><td colspan="10" class="vazio">Nenhum turno no período</td></tr>`;return;}
   document.getElementById("hist-body").innerHTML=turnos.map(t=>{
-    const d=parseFloat(t["Disponibilidade (%)"])||0;
+    const minP=parseFloat(t["Total Parado (min)"])||0;
+    const d=Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
     const cls=dispCls(d);
-    return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Linha"]||"—"}</td><td>${t["Turno"]||"—"}</td><td>${t["Produto"]||"—"}</td><td>${t["SKU"]||"—"}</td><td>${(parseFloat(t["Total Produzido"])||0).toLocaleString("pt-BR")}</td><td>${t["Total Parado (min)"]||0}</td><td>${t["Nº Paradas"]||0}</td><td><span class="badge ${cls}">${d}%</span></td><td><span class="badge ${cls}">${cls==="ok"?"OK":cls==="warn"?"Atenção":"Crítico"}</span></td></tr>`;
+    return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Linha"]||"—"}</td><td>${t["Turno"]||"—"}</td><td>${t["Produto"]||"—"}</td><td>${t["SKU"]||"—"}</td><td>${(parseFloat(t["Total Produzido"])||0).toLocaleString("pt-BR")}</td><td>${minP}</td><td>${t["Nº Paradas"]||0}</td><td><span class="badge ${cls}">${d}%</span></td><td><span class="badge ${cls}">${cls==="ok"?"OK":cls==="warn"?"Atenção":"Crítico"}</span></td></tr>`;
   }).join("");
 }
 
@@ -532,7 +573,10 @@ function renderDispLinha(turnos){
   const cores=["#1a56a0","#1a7a50","#7a3a0a"];
   const medias=linhas.map(l=>{
     const lt=turnos.filter(t=>t["Linha"]===l);
-    return lt.length?Math.round(lt.reduce((a,t)=>a+(parseFloat(t["Disponibilidade (%)"])||0),0)/lt.length):0;
+    return lt.length?Math.round(lt.reduce((a,t)=>{
+      const minP=parseFloat(t["Total Parado (min)"])||0;
+      return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
+    },0)/lt.length):0;
   });
   const el=document.getElementById("disp-linha");
   if(!el) return;
