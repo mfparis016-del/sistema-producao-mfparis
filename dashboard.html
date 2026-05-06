@@ -471,12 +471,16 @@ function renderSemaforo(turnos){
   document.getElementById("sem-grid").innerHTML=linhas.map(l=>{
     const lt=turnos.filter(t=>t["Linha"]===l);
     if(!lt.length) return `<div class="sem ok"><div class="sl">${l}</div><div class="sv">—</div><div class="sm">Sem dados</div><div class="ss">Sem registro</div></div>`;
-    const d=Math.round(lt.reduce((a,t)=>{
-      const minP=parseFloat(t["Total Parado (min)"])||0;
+    // 1 turno por dia
+    const ltMap={};
+    lt.forEach(t=>{const k=normDate(t["Data"]||"");if(!ltMap[k])ltMap[k]=t;});
+    const ltDias=Object.values(ltMap);
+    const d=Math.round(ltDias.reduce((a,t)=>{
+      const minP=calcMinParadoTurno(normDate(t["Data"]||""),t["Turno"]||"",t["Linha"]||"");
       return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
-    },0)/lt.length);
+    },0)/ltDias.length);
     const c=dispCls(d);
-    return `<div class="sem ${c}"><div class="sl">${l}</div><div class="sv">${d}%</div><div class="sm">Meta 90% · ${ltArr.length} dia(s)</div><div class="ss">${c==="ok"?"✓ OK":c==="warn"?"Atenção":"Crítico"}</div></div>`;
+    return `<div class="sem ${c}"><div class="sl">${l}</div><div class="sv">${d}%</div><div class="sm">Meta 90% · ${ltDias.length} dia(s)</div><div class="ss">${c==="ok"?"✓ OK":c==="warn"?"Atenção":"Crítico"}</div></div>`;
   }).join("");
 }
 
