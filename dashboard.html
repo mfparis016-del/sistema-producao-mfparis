@@ -64,10 +64,13 @@ function renderDispLinha(turnos){
   const cores=["#1a56a0","#1a7a50","#7a3a0a"];
   const medias = linhas.map(l => {
     const lt = turnos.filter(t => t["Linha"]===l);
-    return lt.length ? Math.round(lt.reduce((a,t) => {
+    const ltMap = {};
+    lt.forEach(t => { const k=normDate(t["Data"]||""); if(!ltMap[k]) ltMap[k]=t; });
+    const ltU = Object.values(ltMap);
+    return ltU.length ? Math.round(ltU.reduce((a,t) => {
       const minP = calcMinParadoTurno(normDate(t["Data"]||""), t["Turno"]||"", t["Linha"]||"");
       return a + Math.max(0, Math.round((1 - minP / tempoDisponivel(t["Data"])) * 100));
-    }, 0) / lt.length) : 0;
+    }, 0) / ltU.length) : 0;
   });
   const el=document.getElementById("disp-linha");
   if(!el) return;
@@ -292,13 +295,7 @@ async function carregarDados(){
     ]);
     todosTurnos=rT.dados||[];
     todasParadas=rP.dados||[];
-    // DEBUG — mostra campos da primeira parada no console
-    if(todasParadas.length>0){
-      console.log("=== CAMPOS DA PARADA ===");
-      console.log(JSON.stringify(Object.keys(todasParadas[0])));
-      console.log("=== VALORES ===");
-      console.log(JSON.stringify(todasParadas[0]));
-    }
+
     renderTudo();
     document.getElementById("atualizado").textContent="Atualizado: "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   }catch(e){
@@ -423,15 +420,20 @@ function renderKPIs(turnos,paradas){
     document.getElementById("kpi-grid").innerHTML=`<div class="kpi" style="grid-column:span 5"><div class="kl">Sem dados no período</div><div class="kv">—</div><div class="ks">Nenhum turno registrado</div></div>`;
     return;
   }
+  // 1 turno por dia — deduplica por data+linha
+  const turnosMap={};
+  turnos.forEach(t=>{const k=normDate(t["Data"]||"")+"|"+(t["Linha"]||"");if(!turnosMap[k])turnosMap[k]=t;});
+  const turnosUnicos=Object.values(turnosMap);
+
   const totalProd=turnos.reduce((a,t)=>a+(parseFloat(t["Total Produzido"])||0),0);
-  const totalMin=turnos.reduce((a,t)=>a+(parseFloat(t["Total Parado (min)"])||0),0);
-  const totalPar=turnos.reduce((a,t)=>a+(parseFloat(t["Nº Paradas"])||0),0);
-  // Recalculate disponibilidade using real available time (495 min seg-qui, 435 sexta)
-  const dispMedia=Math.round(turnos.reduce((a,t)=>{
-    const minParado=parseFloat(t["Total Parado (min)"])||0;
-    const dispReal=Math.max(0,Math.round((1-minParado/tempoDisponivel(t["Data"]))*100));
-    return a+dispReal;
-  },0)/turnos.length);
+  // Soma duração real da aba Paradas
+  const totalMin=paradas.reduce((a,p)=>a+getDuracao(p),0);
+  const totalPar=paradas.length;
+  // Disponibilidade por turno único
+  const dispMedia=turnosUnicos.length?Math.round(turnosUnicos.reduce((a,t)=>{
+    const minP=calcMinParadoTurno(normDate(t["Data"]||""),t["Turno"]||"",t["Linha"]||"");
+    return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
+  },0)/turnosUnicos.length):0;
   const cls=dispCls(dispMedia);
   const retrab=paradas.filter(p=>p["Retrabalho/Descarte"]&&String(p["Retrabalho/Descarte"]).trim()).length;
 
@@ -439,7 +441,7 @@ function renderKPIs(turnos,paradas){
     <div class="kpi ${cls}">
       <div class="kl">Disponibilidade média</div>
       <div class="kv">${dispMedia}%</div>
-      <div class="ks">Meta: 90% · ${turnos.length} turno(s)</div>
+      <div class="ks">Meta: 90% · ${turnosUnicos.length} dia(s)</div>
       <div class="kb"><div class="kbf" style="width:${Math.min(100,dispMedia)}%;"></div></div>
     </div>
     <div class="kpi">
@@ -467,14 +469,14 @@ function renderKPIs(turnos,paradas){
 function renderSemaforo(turnos){
   const linhas=["Láctea","Sacaria","Café"];
   document.getElementById("sem-grid").innerHTML=linhas.map(l=>{
-    const lt=todosTurnos.filter(t=>t["Linha"]===l);
+    const lt=turnos.filter(t=>t["Linha"]===l);
     if(!lt.length) return `<div class="sem ok"><div class="sl">${l}</div><div class="sv">—</div><div class="sm">Sem dados</div><div class="ss">Sem registro</div></div>`;
     const d=Math.round(lt.reduce((a,t)=>{
       const minP=parseFloat(t["Total Parado (min)"])||0;
       return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
     },0)/lt.length);
     const c=dispCls(d);
-    return `<div class="sem ${c}"><div class="sl">${l}</div><div class="sv">${d}%</div><div class="sm">Meta 90% · ${lt.length} turno(s)</div><div class="ss">${c==="ok"?"✓ OK":c==="warn"?"Atenção":"Crítico"}</div></div>`;
+    return `<div class="sem ${c}"><div class="sl">${l}</div><div class="sv">${d}%</div><div class="sm">Meta 90% · ${ltArr.length} dia(s)</div><div class="ss">${c==="ok"?"✓ OK":c==="warn"?"Atenção":"Crítico"}</div></div>`;
   }).join("");
 }
 
@@ -510,7 +512,14 @@ function renderTrend(turnos){
   const labels=[...new Set(ult.map(t=>fmtData(t["Data"])))];
   const datasets=linhas.map(l=>({
     label:l,
-    data:labels.map(lbl=>{const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===lbl);return lt.length?Math.round(lt.reduce((a,t)=>{const minP=calcMinParadoTurno(normDate(t["Data"]||""),t["Turno"]||"",t["Linha"]||"");return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));},0)/lt.length):null;}),
+    data:labels.map(lbl=>{
+  const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===lbl);
+  if(!lt.length) return null;
+  // 1 turno por dia — pega o primeiro
+  const t=lt[0];
+  const minP=calcMinParadoTurno(normDate(t["Data"]||""),t["Turno"]||"",t["Linha"]||"");
+  return Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
+}),
     borderColor:cores[l],backgroundColor:cores[l]+"22",tension:.3,fill:true,pointRadius:3,spanGaps:true
   }));
   document.getElementById("leg-trend").innerHTML=linhas.map(l=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${cores[l]};display:inline-block;"></span>${l}</span>`).join("");
@@ -533,9 +542,16 @@ function renderAlertas(turnos,paradas){
 }
 
 function renderHistorico(turnos){
-  document.getElementById("hist-count").textContent=`— ${turnos.length} registro(s)`;
-  if(!turnos.length){document.getElementById("hist-body").innerHTML=`<tr><td colspan="10" class="vazio">Nenhum turno no período</td></tr>`;return;}
-  document.getElementById("hist-body").innerHTML=turnos.map(t=>{
+  // 1 turno por dia — deduplica mantendo o mais recente
+  const turnosMapHist = {};
+  turnos.forEach(t => {
+    const k = normDate(t["Data"]||"") + "|" + (t["Linha"]||"");
+    turnosMapHist[k] = t; // sobrescreve, fica o último salvo
+  });
+  const turnosHistUnicos = Object.values(turnosMapHist).sort((a,b)=>normDate(b["Data"]||"")>normDate(a["Data"]||"")?1:-1);
+  document.getElementById("hist-count").textContent=`— ${turnosHistUnicos.length} dia(s)`;
+  if(!turnosHistUnicos.length){document.getElementById("hist-body").innerHTML=`<tr><td colspan="10" class="vazio">Nenhum turno no período</td></tr>`;return;}
+  document.getElementById("hist-body").innerHTML=turnosHistUnicos.map(t=>{
     const minP=parseFloat(t["Total Parado (min)"])||0;
     const d=Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
     const cls=dispCls(d);
@@ -601,10 +617,13 @@ function renderDispLinha(turnos){
   const cores=["#1a56a0","#1a7a50","#7a3a0a"];
   const medias = linhas.map(l => {
     const lt = turnos.filter(t => t["Linha"]===l);
-    return lt.length ? Math.round(lt.reduce((a,t) => {
+    const ltMap = {};
+    lt.forEach(t => { const k=normDate(t["Data"]||""); if(!ltMap[k]) ltMap[k]=t; });
+    const ltU = Object.values(ltMap);
+    return ltU.length ? Math.round(ltU.reduce((a,t) => {
       const minP = calcMinParadoTurno(normDate(t["Data"]||""), t["Turno"]||"", t["Linha"]||"");
       return a + Math.max(0, Math.round((1 - minP / tempoDisponivel(t["Data"])) * 100));
-    }, 0) / lt.length) : 0;
+    }, 0) / ltU.length) : 0;
   });
   const el=document.getElementById("disp-linha");
   if(!el) return;
