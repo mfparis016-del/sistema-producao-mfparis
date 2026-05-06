@@ -62,12 +62,12 @@ function renderDispLinha(turnos){
   if(grafDispLinha){grafDispLinha.destroy();grafDispLinha=null;}
   const linhas=["Láctea","Sacaria","Café"];
   const cores=["#1a56a0","#1a7a50","#7a3a0a"];
-  const medias=linhas.map(l=>{
-    const lt=turnos.filter(t=>t["Linha"]===l);
-    return lt.length?Math.round(lt.reduce((a,t)=>{
-      const minP=parseFloat(t["Total Parado (min)"])||0;
-      return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
-    },0)/lt.length):0;
+  const medias = linhas.map(l => {
+    const lt = turnos.filter(t => t["Linha"]===l);
+    return lt.length ? Math.round(lt.reduce((a,t) => {
+      const minP = calcMinParadoTurno(normDate(t["Data"]||""), t["Turno"]||"", t["Linha"]||"");
+      return a + Math.max(0, Math.round((1 - minP / tempoDisponivel(t["Data"])) * 100));
+    }, 0) / lt.length) : 0;
   });
   const el=document.getElementById("disp-linha");
   if(!el) return;
@@ -389,6 +389,23 @@ function tempoDisponivel(d){
 }
 function fmtData(d){if(!d)return"—"; try{return new Date(d).toLocaleDateString("pt-BR");}catch{return d;}}
 
+
+function getDuracao(p){
+  // Try common field name variations for duration
+  const keys = Object.keys(p);
+  const k = keys.find(k => k.includes("ura") || k.includes("Dura")) || "";
+  return parseFloat(k ? p[k] : 0) || 0;
+}
+
+function calcMinParadoTurno(dataISO, turno, linha){
+  return todasParadas
+    .filter(p =>
+      normDate(p["Data"]||"") === dataISO &&
+      (p["Turno"]||"") === turno &&
+      (p["Linha"]||"") === linha
+    )
+    .reduce((s, p) => s + getDuracao(p), 0);
+}
 function renderTudo(){
   const{turnos,paradas}=dados();
   renderKPIs(turnos,paradas);
@@ -493,7 +510,7 @@ function renderTrend(turnos){
   const labels=[...new Set(ult.map(t=>fmtData(t["Data"])))];
   const datasets=linhas.map(l=>({
     label:l,
-    data:labels.map(d=>{const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===d);return lt.length?Math.round(lt.reduce((a,t)=>{const minP=parseFloat(t["Total Parado (min)"])||0;return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));},0)/lt.length):null;}),
+    data:labels.map(lbl=>{const lt=ult.filter(t=>t["Linha"]===l&&fmtData(t["Data"])===lbl);return lt.length?Math.round(lt.reduce((a,t)=>{const minP=calcMinParadoTurno(normDate(t["Data"]||""),t["Turno"]||"",t["Linha"]||"");return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));},0)/lt.length):null;}),
     borderColor:cores[l],backgroundColor:cores[l]+"22",tension:.3,fill:true,pointRadius:3,spanGaps:true
   }));
   document.getElementById("leg-trend").innerHTML=linhas.map(l=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${cores[l]};display:inline-block;"></span>${l}</span>`).join("");
@@ -582,12 +599,12 @@ function renderDispLinha(turnos){
   if(grafDispLinha){grafDispLinha.destroy();grafDispLinha=null;}
   const linhas=["Láctea","Sacaria","Café"];
   const cores=["#1a56a0","#1a7a50","#7a3a0a"];
-  const medias=linhas.map(l=>{
-    const lt=turnos.filter(t=>t["Linha"]===l);
-    return lt.length?Math.round(lt.reduce((a,t)=>{
-      const minP=parseFloat(t["Total Parado (min)"])||0;
-      return a+Math.max(0,Math.round((1-minP/tempoDisponivel(t["Data"]))*100));
-    },0)/lt.length):0;
+  const medias = linhas.map(l => {
+    const lt = turnos.filter(t => t["Linha"]===l);
+    return lt.length ? Math.round(lt.reduce((a,t) => {
+      const minP = calcMinParadoTurno(normDate(t["Data"]||""), t["Turno"]||"", t["Linha"]||"");
+      return a + Math.max(0, Math.round((1 - minP / tempoDisponivel(t["Data"])) * 100));
+    }, 0) / lt.length) : 0;
   });
   const el=document.getElementById("disp-linha");
   if(!el) return;
